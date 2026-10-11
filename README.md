@@ -54,6 +54,8 @@ tests/                    testes automatizados (Vitest)
 docs/                     matriz, integrações, implantação, backup, custos, limitações, evolução
 ```
 
+**Site publicado:** https://afiliados-ml-nn8n.onrender.com
+
 ## Rodar localmente
 
 Requisitos: Node 20+.

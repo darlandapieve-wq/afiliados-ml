@@ -2,7 +2,8 @@
 
 ## Ambiente atual
 - **Supabase:** projeto `afiliados-ml` (ref `qbhlgenqahqqomtdtrhi`, região São Paulo, plano gratuito). Já tem as migrações aplicadas, as Edge Functions `worker`, `oauth` e `app` publicadas e o pg_cron chamando o worker a cada minuto.
-- **Frontend:** site estático, que pode ficar em Render, Netlify, Cloudflare Pages ou GitHub Pages.
+- **Frontend:** publicado no Render em https://afiliados-ml-nn8n.onrender.com (deploy automático a cada push na branch `main`). O endereço já está registrado no Vault como `app_url`.
+- **Rotas do site:** o build copia `index.html` para `404.html`, para que links diretos como `/p/<slug>` funcionem. Opcionalmente, adicione no painel do Render (Redirects/Rewrites) a regra `/*` → `/index.html` (Rewrite).
 
 ## 1. Publicar o frontend no Render (grátis)
 1. Em https://dashboard.render.com, crie um **New › Static Site** a partir do repositório do GitHub. O `render.yaml` já define o build, a pasta `dist` e o redirecionamento das rotas para `index.html`.
