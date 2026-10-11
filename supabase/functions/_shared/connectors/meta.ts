@@ -52,11 +52,13 @@ export const facebook: Connector = {
   },
 
   async test(ctx) {
-    const r = await http(ctx.fetch, `${GRAPH}/${ctx.account.externalId}?fields=name,tasks&access_token=${encodeURIComponent(ctx.accessToken)}`);
+    // "tasks" só existe em /me/accounts; aqui o token já é da Página.
+    const r = await http(ctx.fetch, `${GRAPH}/${ctx.account.externalId}?fields=name,instagram_business_account{username}&access_token=${encodeURIComponent(ctx.accessToken)}`);
     if (r.status !== 200) return { ok: false, detail: graphMsg(r) };
-    const tasks: string[] = r.json.tasks ?? [];
+    const tasks: string[] = (ctx.account.meta?.tasks as string[]) ?? [];
     if (tasks.length && !tasks.includes('CREATE_CONTENT')) return { ok: false, detail: 'Sua função na Página não permite criar conteúdo.' };
-    return { ok: true, detail: `Página "${r.json.name}" pronta para publicar.`, displayName: r.json.name };
+    const ig = r.json.instagram_business_account?.username;
+    return { ok: true, detail: `Página "${r.json.name}" pronta para publicar.${ig ? ` Instagram vinculado: @${ig}.` : ' Nenhuma conta profissional do Instagram vinculada a esta Página.'}`, displayName: r.json.name };
   },
 };
 
