@@ -132,7 +132,15 @@ export default function NewCampaign() {
       if (ce) throw ce;
 
       setBusy('Gerando artes…');
-      const { assets, warnings } = await generateArts(uid, camp.id, product as any, profile.brand, style, showPrice, platforms);
+      // Se as artes falharem, a campanha continua (sem duplicar): textos são gerados e as artes podem ser refeitas na aba "Artes e vídeo".
+      let assets: Record<string, string> = {};
+      const warnings: string[] = [];
+      try {
+        const r = await generateArts(uid, camp.id, product as any, profile.brand, style, showPrice, platforms);
+        assets = r.assets; warnings.push(...r.warnings);
+      } catch (e) {
+        warnings.push(`As artes não foram geradas (${errMsg(e)}). Use "Gerar novamente as artes" na aba Artes e vídeo.`);
+      }
       setBusy('Gerando textos…');
       await upsertVariants(camp.id, product as any, style, showPrice, url, platforms, assets, profile.brand.handle);
       nav(`/campanhas/${camp.id}${warnings.length ? `?avisos=${encodeURIComponent(warnings.join(' | '))}` : ''}`);
