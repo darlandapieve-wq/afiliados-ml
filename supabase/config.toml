@@ -1,0 +1,10 @@
+project_id = "afiliados-ml"
+
+[functions.worker]
+verify_jwt = false
+
+[functions.oauth]
+verify_jwt = false
+
+[functions.app]
+verify_jwt = true

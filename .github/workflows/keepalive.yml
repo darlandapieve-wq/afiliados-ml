@@ -1,0 +1,13 @@
+# Evita a pausa do projeto Supabase gratuito por 7 dias sem atividade.
+# Configure o segredo do repositório SUPABASE_URL e SUPABASE_ANON_KEY.
+name: Keep Supabase alive
+on:
+  schedule: [{ cron: '17 12 */3 * *' }]
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -fsS "${{ secrets.SUPABASE_URL }}/rest/v1/platforms?select=code&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" > /dev/null && echo ok
