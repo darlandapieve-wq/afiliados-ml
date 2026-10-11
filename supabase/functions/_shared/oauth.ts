@@ -41,7 +41,10 @@ export function authorizeUrl(p: Provider, env: Env, redirectUri: string, state: 
   const q = (o: Record<string, string>) => new URLSearchParams(o).toString();
   switch (p) {
     case 'meta':
-      return `https://www.facebook.com/v25.0/dialog/oauth?${q({ client_id: id, redirect_uri: redirectUri, state, scope: SCOPES.meta.join(','), response_type: 'code' })}`;
+      // Apps do tipo Empresa usam "Login do Facebook para Empresas" com ID de configuração (META_CONFIG_ID).
+      return env('META_CONFIG_ID')
+        ? `https://www.facebook.com/v25.0/dialog/oauth?${q({ client_id: id, redirect_uri: redirectUri, state, config_id: env('META_CONFIG_ID')!, response_type: 'code', override_default_response_type: 'true' })}`
+        : `https://www.facebook.com/v25.0/dialog/oauth?${q({ client_id: id, redirect_uri: redirectUri, state, scope: SCOPES.meta.join(','), response_type: 'code' })}`;
     case 'tiktok':
       return `https://www.tiktok.com/v2/auth/authorize/?${q({ client_key: id, redirect_uri: redirectUri, state, scope: SCOPES.tiktok.join(','), response_type: 'code' })}`;
     case 'google':

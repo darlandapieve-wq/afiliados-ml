@@ -14,6 +14,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Landing from './pages/Landing';
 import Privacy from './pages/Privacy';
+import { PrivacyPolicy, DataDeletion } from './pages/PublicPolicy';
 
 export interface Profile {
   id: string; display_name: string | null; timezone: string;
@@ -93,6 +94,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/p/:slug" element={<Landing />} />
+        <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
+        <Route path="/exclusao-de-dados" element={<DataDeletion />} />
         <Route path="/*" element={<Authed />} />
       </Routes>
     </BrowserRouter>

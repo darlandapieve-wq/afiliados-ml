@@ -26,6 +26,8 @@ As credenciais dos apps de desenvolvedor ficam em **Supabase › Project Setting
 ## 2. Facebook e Instagram (sem App Review para as suas contas)
 1. Em https://developers.facebook.com crie um app do tipo **Empresa** e adicione os casos de uso *Gerenciar Páginas* e *Instagram (Facebook Login)*.
 2. Em *Login do Facebook › Configurações*, cadastre o URL de redirecionamento acima.
+   - Em *Configurações › Básico* preencha: ícone (`public/app-icon-1024.png`), **URL da Política de Privacidade** `https://afiliados-ml-nn8n.onrender.com/politica-de-privacidade`, **URL de exclusão de dados** `https://afiliados-ml-nn8n.onrender.com/exclusao-de-dados` e categoria *Negócios e Páginas*.
+   - Se o app usar **Login do Facebook para Empresas**, crie uma *Configuração* com as permissões abaixo e salve o ID dela no segredo `META_CONFIG_ID`.
 3. Confirme que **você** tem função de Administrador no app. Com o **acesso padrão**, o app funciona para quem tem função nele, sem App Review.
 4. A conta do Instagram precisa ser **profissional** (Comercial ou Criador de conteúdo) e estar **vinculada à Página**.
 5. Salve `META_APP_ID` e `META_APP_SECRET` nos segredos. Em *Integrações*, clique em *Conectar com login oficial* e autorize a Página. O Instagram vinculado é detectado automaticamente.
