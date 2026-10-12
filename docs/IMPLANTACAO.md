@@ -33,3 +33,9 @@ Em Supabase › Project Settings › Edge Functions › Secrets: veja a tabela e
 
 ## 5. Atualizar funções
 `npm run bundle:functions` gera os pacotes em `dist-functions/` (útil para publicar pelo painel). Com a CLI, use `supabase functions deploy <nome>`.
+
+**Implantação atual (`app` e `worker`, desde 12/10/2026):** o `index.ts` publicado só importa o código do GitHub fixado em um commit, por exemplo:
+```ts
+import 'https://raw.githubusercontent.com/darlandapieve-wq/afiliados-ml/<SHA>/supabase/functions/app/index.ts';
+```
+O Supabase empacota o código no momento da implantação, então mudanças posteriores no repositório não afetam a versão no ar. Para atualizar: faça o push, troque o `<SHA>` pelo novo commit e implante de novo (painel, MCP ou CLI). A função `oauth` continua no pacote anterior.
