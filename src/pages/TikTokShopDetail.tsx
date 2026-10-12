@@ -22,6 +22,7 @@ export default function TikTokShopDetail() {
   const [aiOn, setAiOn] = useState(false);
   const [msg, setMsg] = useState<M>(null);
   const [busy, setBusy] = useState('');
+  const [rendering, setRendering] = useState<number | null>(null);
 
   async function load() {
     const { data } = await supabase.from('tts_creatives').select('*').eq('id', id).single();
@@ -76,7 +77,6 @@ export default function TikTokShopDetail() {
     await updateCreative(c.id, { video_path: path, video_url: url, ...(['draft', 'brief_ready'].includes(c.status) ? { status: 'video_ready' } : {}) } as any);
   }, 'Vídeo enviado.');
 
-  const [rendering, setRendering] = useState<number | null>(null);
   const generateVideo = async () => {
     if (!brief) return;
     if (dirty) { setMsg({ t: 'warn', m: 'Salve as alterações do briefing antes de gerar o vídeo.' }); return; }
