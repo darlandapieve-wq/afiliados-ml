@@ -12,7 +12,7 @@ export const supabase = createClient(url, key, { auth: { persistSession: true, a
 export const FUNCTIONS_URL = `${url}/functions/v1`;
 
 /** Chama uma rota da Edge Function `app` com a sessão do usuário. */
-export async function api<T = any>(route: 'integrations' | 'ml-lookup' | 'ai-text' | 'account', body: Record<string, any>): Promise<T> {
+export async function api<T = any>(route: 'integrations' | 'ml-lookup' | 'ai-text' | 'account' | 'tts', body: Record<string, any>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(`app/${route}`, { body });
   if (error) {
     let msg = error.message;

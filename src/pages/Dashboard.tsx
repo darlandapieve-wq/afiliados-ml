@@ -5,6 +5,7 @@ import { useApp } from '../App';
 import { PUB_STATUS, fmtDate } from '../lib/labels';
 import { PLATFORMS, PLATFORM_ORDER, AUTO_STATUS_LABEL } from '../../supabase/functions/_shared/platforms.ts';
 import { StatusBadge } from '../components/ui';
+import { anchorDaysLeft } from '../../supabase/functions/_shared/tts.ts';
 
 export default function Dashboard() {
   const { profile } = useApp();
@@ -13,6 +14,7 @@ export default function Dashboard() {
   const [next, setNext] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [notice, setNotice] = useState<any | null>(null);
+  const [tts, setTts] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -30,6 +32,8 @@ export default function Dashboard() {
       setNext(n ?? []);
       const { data: a } = await supabase.from('connected_accounts').select('platform, status');
       setAccounts(a ?? []);
+      const { data: t } = await supabase.from('tts_creatives').select('id, product_name, status, anchor_deadline, tt_error').in('status', ['published', 'video_ready', 'brief_ready', 'scheduled', 'posting']).order('updated_at', { ascending: false }).limit(50);
+      setTts(t ?? []);
       const { data: notices } = await supabase.from('policy_notices').select('*').eq('requires_ack', true);
       const { data: acks } = await supabase.from('policy_acks').select('notice_id');
       setNotice((notices ?? []).find((x: any) => !(acks ?? []).some((y: any) => y.notice_id === x.id)) ?? null);
@@ -51,6 +55,18 @@ export default function Dashboard() {
           <div><button onClick={ack}>Li e entendi</button></div>
         </div>
       )}
+
+      {tts.length > 0 && (() => {
+        const anchors = tts.filter((x) => x.status === 'published');
+        const todo = tts.filter((x) => x.status !== 'published').length;
+        return (
+          <div className={`alert ${anchors.some((x) => (anchorDaysLeft(x.anchor_deadline) ?? 99) <= 7) ? 'warn' : 'info'}`}>
+            <b>TikTok Shop:</b> {todo} criativo(s) em produção.
+            {anchors.length > 0 && <> Sacolinha pendente: {anchors.map((x, i) => <span key={x.id}>{i ? ' · ' : ' '}<Link to={`/tiktok-shop/${x.id}`}>{x.product_name}</Link> ({Math.max(0, anchorDaysLeft(x.anchor_deadline) ?? 0)} d)</span>)}.</>}
+            {' '}<Link to="/tiktok-shop">Abrir módulo →</Link>
+          </div>
+        );
+      })()}
 
       <div className="grid g4">
         {[['products', 'Produtos'], ['campaigns', 'Campanhas'], ['scheduled', 'Agendadas'], ['published', 'Publicadas']].map(([key, l]) => (

@@ -26,6 +26,7 @@
     "supabase/functions/_shared"
   ],
   "exclude": [
-    "supabase/functions/_shared/supa.ts"
+    "supabase/functions/_shared/supa.ts",
+    "supabase/functions/_shared/tts-server.ts"
   ]
 }

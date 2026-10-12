@@ -44,7 +44,7 @@ export const tiktok: Connector = {
       if (size > 64 * 1024 * 1024) return { kind: 'rejected', error: 'Vídeo acima de 64 MB.', retryable: false };
       const init = await http(ctx.fetch, `${API}/post/publish/video/init/`, {
         method: 'POST', headers: auth(ctx.accessToken),
-        body: JSON.stringify({ post_info: { ...post_info, title: ctx.caption.slice(0, 2200) }, source_info: { source: 'FILE_UPLOAD', video_size: size, chunk_size: size, total_chunk_count: 1 } }),
+        body: JSON.stringify({ post_info: { ...post_info, title: ctx.caption.slice(0, 2200), ...(ctx.aigc ? { is_aigc: true } : {}) }, source_info: { source: 'FILE_UPLOAD', video_size: size, chunk_size: size, total_chunk_count: 1 } }),
       });
       if (init.status !== 200 || init.json?.error?.code !== 'ok') return classifyCreateError(init, ttMsg(init));
       const { publish_id, upload_url } = init.json.data;

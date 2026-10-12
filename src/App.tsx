@@ -12,6 +12,8 @@ import Calendar from './pages/Calendar';
 import Integrations from './pages/Integrations';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import TikTokShop from './pages/TikTokShop';
+import TikTokShopDetail from './pages/TikTokShopDetail';
 import Landing from './pages/Landing';
 import Privacy from './pages/Privacy';
 import { PrivacyPolicy, DataDeletion } from './pages/PublicPolicy';
@@ -30,7 +32,7 @@ export const useApp = () => useContext(AppCtx)!;
 function Shell({ children }: { children: ReactNode }) {
   const nav = [
     ['/', 'Painel'], ['/nova', '+ Nova campanha'], ['/campanhas', 'Campanhas'], ['/produtos', 'Produtos'],
-    ['/calendario', 'Calendário'], ['/integracoes', 'Integrações'], ['/relatorios', 'Relatórios'], ['/configuracoes', 'Configurações'],
+    ['/tiktok-shop', 'TikTok Shop'], ['/calendario', 'Calendário'], ['/integracoes', 'Integrações'], ['/relatorios', 'Relatórios'], ['/configuracoes', 'Configurações'],
   ];
   return (
     <div className="layout">
@@ -77,6 +79,8 @@ function Authed() {
           <Route path="/campanhas" element={<Campaigns />} />
           <Route path="/campanhas/:id" element={<CampaignDetail />} />
           <Route path="/produtos" element={<Products />} />
+          <Route path="/tiktok-shop" element={<TikTokShop />} />
+          <Route path="/tiktok-shop/:id" element={<TikTokShopDetail />} />
           <Route path="/calendario" element={<Calendar />} />
           <Route path="/integracoes" element={<Integrations />} />
           <Route path="/relatorios" element={<Reports />} />

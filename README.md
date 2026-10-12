@@ -26,6 +26,7 @@ Aplicação web (pt-BR) que transforma o link de um produto do Mercado Livre em 
 | TikTok e YouTube automáticos | ⏳ pendentes de credenciais. Até a auditoria das plataformas, publicam como **privado** |
 | Pinterest automático | ⏳ pendente de credenciais. Só sandbox até a aprovação |
 | WhatsApp automático | ❌ não existe API oficial para Status, grupos ou Canais (somente assistido) |
+| **Módulo TikTok Shop**: foto/link + comentários → briefing (roteiro, prompts, legenda) para o Pippit → vídeo → publicação (Pippit ou API com rótulo de IA) → controle dos 30 dias da sacolinha | ✅ ([docs/TIKTOK-SHOP.md](docs/TIKTOK-SHOP.md)) |
 
 Detalhes por rede: [docs/MATRIZ-PLATAFORMAS.md](docs/MATRIZ-PLATAFORMAS.md). Como configurar cada uma: [docs/INTEGRACOES.md](docs/INTEGRACOES.md).
 

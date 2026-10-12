@@ -14,6 +14,8 @@ export interface PublishContext {
   link: string;
   imageUrl?: string | null;
   videoUrl?: string | null;
+  /** Conteúdo gerado por IA: liga o rótulo oficial quando a plataforma suporta (TikTok: is_aigc). */
+  aigc?: boolean;
   accessToken: string;
   account: AccountRef;
   fetch: typeof fetch;

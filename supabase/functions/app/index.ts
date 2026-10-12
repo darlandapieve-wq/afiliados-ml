@@ -4,9 +4,10 @@ import { handler as integrations } from './routes/integrations.ts';
 import { handler as mlLookup } from './routes/ml-lookup.ts';
 import { handler as aiText } from './routes/ai-text.ts';
 import { handler as account } from './routes/account.ts';
+import { handler as tts } from './routes/tts.ts';
 
 const routes: Record<string, (req: Request) => Promise<Response>> = {
-  integrations, 'ml-lookup': mlLookup, 'ai-text': aiText, account,
+  integrations, 'ml-lookup': mlLookup, 'ai-text': aiText, account, tts,
 };
 
 Deno.serve(handle(async (req) => {

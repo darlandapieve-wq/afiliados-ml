@@ -4,6 +4,7 @@ import { admin, config, env, readSecret, saveSecret } from '../_shared/supa.ts';
 import { processJob, type Repo, type PubRow, type JobRow } from '../_shared/engine.ts';
 import { providerOf, refresh, type Provider } from '../_shared/oauth.ts';
 import { redact } from '../_shared/crypto.ts';
+import { sweepPosting } from '../_shared/tts-server.ts';
 
 const db = admin();
 
@@ -121,6 +122,8 @@ Deno.serve(async (req) => {
       }
     }
   }
+  // Módulo TikTok Shop: acompanha vídeos enviados pela API
+  try { results.tts_checked = await sweepPosting(db); } catch (e) { console.error('tts sweep', redact((e as Error).message)); }
   // Limpeza de estados OAuth antigos
   await db.from('oauth_states').delete().lt('created_at', new Date(Date.now() - 15 * 60e3).toISOString());
   return new Response(JSON.stringify({ ok: true, results, ms: Date.now() - started }), { headers: { 'content-type': 'application/json' } });
