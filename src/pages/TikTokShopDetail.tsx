@@ -85,7 +85,7 @@ export default function TikTokShopDetail() {
       const image = img ? await loadImage(img) : null;
       if (img && !image) throw new Error('Não foi possível carregar a foto do produto. Envie a foto novamente.');
       const { blob, ext, seconds } = await renderBriefVideo(brief, image, (p) => setRendering(p));
-      if (blob.size < 50_000) throw new Error('O vídeo saiu vazio. Mantenha esta aba visível durante a geração e tente de novo.');
+      if (blob.size < 50_000) throw new Error('O vídeo saiu vazio. Use Chrome ou Edge atualizados e tente de novo.');
       setRendering(1);
       const file = new File([blob], `video-app.${ext}`, { type: blob.type });
       const { path, url } = await uploadCreativeFile(session.user.id, c.id, file, 'video');
@@ -206,7 +206,7 @@ export default function TikTokShopDetail() {
       <div className="card stack">
         <h2>Vídeo final</h2>
         {c.video_url ? <video src={c.video_url} controls style={{ maxWidth: 280, borderRadius: 10 }} /> : <div className="muted small">Gere aqui um vídeo vertical com a foto do produto e os textos do roteiro (grátis, sem som), ou envie o MP4 exportado do Pippit.</div>}
-        {rendering !== null && <div className="alert info small">Gravando o vídeo em tempo real ({Math.round(rendering * 100)}%). Mantenha esta aba aberta e visível até terminar.</div>}
+        {rendering !== null && <div className="alert info small">Gerando o vídeo ({Math.round(rendering * 100)}%). Não feche esta aba até terminar.</div>}
         {c.video_url && <div className="row"><a className="btn" href={c.video_url} download target="_blank" rel="noreferrer">Baixar vídeo</a></div>}
         {!locked && (
           <div className="row">

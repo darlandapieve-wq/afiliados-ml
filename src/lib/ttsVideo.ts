@@ -3,6 +3,7 @@
 // Sem narração: no TikTok, adicione música ou "texto para fala" ao publicar.
 import type { TtsBrief, TtsScene } from '../../supabase/functions/_shared/tts.ts';
 import { videoMime } from './art';
+import { Muxer, ArrayBufferTarget } from 'mp4-muxer';
 
 export const VW = 1080, VH = 1920;
 
@@ -51,20 +52,27 @@ export function sceneAt(b: TtsBrief, t: number): { scene: TtsScene; index: numbe
 }
 
 /** Desenha o quadro do instante `t`. */
-export function drawFrame(ctx: CanvasRenderingContext2D, b: TtsBrief, img: HTMLImageElement | null, t: number, st: VideoStyle = DEFAULT_STYLE) {
+/** Fundo desfocado pré-calculado (o desfoque por quadro é caro). */
+export function makeBackground(img: HTMLImageElement | null): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = VW; c.height = VH;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#0d0f14'; g.fillRect(0, 0, VW, VH);
+  if (img) {
+    const r = Math.max(VW / img.width, VH / img.height) * 1.1;
+    g.filter = 'blur(38px) brightness(0.45)';
+    g.drawImage(img, (VW - img.width * r) / 2, (VH - img.height * r) / 2, img.width * r, img.height * r);
+    g.filter = 'none';
+  }
+  return c;
+}
+
+export function drawFrame(ctx: CanvasRenderingContext2D, b: TtsBrief, img: HTMLImageElement | null, t: number, st: VideoStyle = DEFAULT_STYLE, bg?: HTMLCanvasElement | null) {
   const { scene, index, local } = sceneAt(b, t);
   const last = index === b.scenes.length - 1;
 
   // Fundo: a própria foto desfocada e escurecida
-  ctx.fillStyle = '#0d0f14';
-  ctx.fillRect(0, 0, VW, VH);
-  if (img) {
-    const r = Math.max(VW / img.width, VH / img.height) * 1.1;
-    ctx.save();
-    ctx.filter = 'blur(38px) brightness(0.45)';
-    ctx.drawImage(img, (VW - img.width * r) / 2, (VH - img.height * r) / 2, img.width * r, img.height * r);
-    ctx.restore();
-  }
+  ctx.drawImage(bg ?? makeBackground(img), 0, 0);
 
   // Produto: zoom e movimento alternados por cena (efeito Ken Burns)
   const box = { x: 70, y: 560, w: VW - 140, h: 900 };
@@ -138,7 +146,7 @@ export function drawFrame(ctx: CanvasRenderingContext2D, b: TtsBrief, img: HTMLI
  * Grava o vídeo em tempo real (30 fps). A aba precisa ficar visível durante a gravação,
  * pois o navegador pausa animações em abas ocultas.
  */
-export async function renderBriefVideo(b: TtsBrief, img: HTMLImageElement | null, onProgress?: (p: number) => void, st: VideoStyle = DEFAULT_STYLE): Promise<{ blob: Blob; ext: string; seconds: number }> {
+async function renderRealtime(b: TtsBrief, img: HTMLImageElement | null, onProgress?: (p: number) => void, st: VideoStyle = DEFAULT_STYLE): Promise<{ blob: Blob; ext: string; seconds: number }> {
   const vm = videoMime();
   if (!vm) throw new Error('Seu navegador não grava vídeo. Use Chrome ou Edge atualizados.');
   if (!b.scenes.length) throw new Error('O roteiro não tem cenas.');
@@ -146,7 +154,8 @@ export async function renderBriefVideo(b: TtsBrief, img: HTMLImageElement | null
   const canvas = document.createElement('canvas');
   canvas.width = VW; canvas.height = VH;
   const ctx = canvas.getContext('2d')!;
-  drawFrame(ctx, b, img, 0, st);
+  const bg = makeBackground(img);
+  drawFrame(ctx, b, img, 0, st, bg);
   const stream = canvas.captureStream(30);
   const rec = new MediaRecorder(stream, { mimeType: vm.mime, videoBitsPerSecond: 6_000_000 });
   const chunks: BlobPart[] = [];
@@ -157,7 +166,7 @@ export async function renderBriefVideo(b: TtsBrief, img: HTMLImageElement | null
   await new Promise<void>((resolve) => {
     const frame = () => {
       const el = (performance.now() - start) / 1000;
-      drawFrame(ctx, b, img, Math.min(el, seconds - 0.001), st);
+      drawFrame(ctx, b, img, Math.min(el, seconds - 0.001), st, bg);
       onProgress?.(Math.min(1, el / seconds));
       if (el < seconds) requestAnimationFrame(frame); else resolve();
     };
@@ -167,4 +176,62 @@ export async function renderBriefVideo(b: TtsBrief, img: HTMLImageElement | null
   await done;
   stream.getTracks().forEach((tr) => tr.stop());
   return { blob: new Blob(chunks, { type: vm.mime.split(';')[0] }), ext: vm.ext, seconds };
+}
+
+/** Cede a vez ao navegador sem depender de timers (que são limitados em abas ocultas). */
+function yieldTick(): Promise<void> {
+  return new Promise((r) => { const ch = new MessageChannel(); ch.port1.onmessage = () => r(); ch.port2.postMessage(0); });
+}
+
+async function pickCodec(): Promise<{ codec: string; mux: 'avc' | 'vp9' } | null> {
+  if (typeof VideoEncoder === 'undefined') return null;
+  // H.264 primeiro (o formato que o TikTok aceita em qualquer caso); VP9 como alternativa
+  const options: { codec: string; mux: 'avc' | 'vp9' }[] = [
+    { codec: 'avc1.640028', mux: 'avc' }, { codec: 'avc1.4d0028', mux: 'avc' }, { codec: 'avc1.420028', mux: 'avc' },
+    { codec: 'vp09.00.40.08', mux: 'vp9' },
+  ];
+  for (const o of options) {
+    try {
+      const r = await VideoEncoder.isConfigSupported({ codec: o.codec, width: VW, height: VH, bitrate: 6_000_000, framerate: 30 });
+      if (r.supported) return o;
+    } catch { /* tenta o próximo */ }
+  }
+  return null;
+}
+
+/**
+ * Codifica quadro a quadro (WebCodecs + MP4): não depende da aba estar visível, gera MP4 H.264
+ * com duração correta e costuma ser mais rápido que o tempo real. Sem suporte, grava em tempo real.
+ */
+export async function renderBriefVideo(b: TtsBrief, img: HTMLImageElement | null, onProgress?: (p: number) => void, st: VideoStyle = DEFAULT_STYLE): Promise<{ blob: Blob; ext: string; seconds: number }> {
+  if (!b.scenes.length) throw new Error('O roteiro não tem cenas.');
+  const picked = await pickCodec();
+  if (!picked) return renderRealtime(b, img, onProgress, st);
+  const { codec, mux } = picked;
+  const fps = 30;
+  const seconds = briefDuration(b);
+  const total = Math.round(seconds * fps);
+  const canvas = document.createElement('canvas');
+  canvas.width = VW; canvas.height = VH;
+  const ctx = canvas.getContext('2d')!;
+  const bg = makeBackground(img);
+  const muxer = new Muxer({ target: new ArrayBufferTarget(), video: { codec: mux, width: VW, height: VH, frameRate: fps }, fastStart: 'in-memory' });
+  let failure: Error | null = null;
+  const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { failure = e as Error; } });
+  enc.configure({ codec, width: VW, height: VH, bitrate: 6_000_000, framerate: fps, ...(mux === 'avc' ? { avc: { format: 'avc' as const } } : {}) });
+  for (let i = 0; i < total; i++) {
+    if (failure) throw failure;
+    drawFrame(ctx, b, img, i / fps, st, bg);
+    const frame = new VideoFrame(canvas, { timestamp: Math.round((i * 1e6) / fps), duration: Math.round(1e6 / fps) });
+    enc.encode(frame, { keyFrame: i % (fps * 2) === 0 });
+    frame.close();
+    while (enc.encodeQueueSize > 8) await yieldTick();
+    if (i % 15 === 0) { onProgress?.(i / total); await yieldTick(); }
+  }
+  await enc.flush();
+  enc.close();
+  if (failure) throw failure;
+  muxer.finalize();
+  onProgress?.(1);
+  return { blob: new Blob([muxer.target.buffer], { type: 'video/mp4' }), ext: 'mp4', seconds, codec: mux } as any;
 }
