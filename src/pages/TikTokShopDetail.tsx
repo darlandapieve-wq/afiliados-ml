@@ -122,7 +122,7 @@ export default function TikTokShopDetail() {
       <Msg m={msg} />
       {busy && <div className="alert info">{busy}</div>}
 
-      <ProductCard c={c} img={img} locked={locked} run={run} onRegen={(b) => { setBrief(b); setDirty(true); }} />
+      <ProductCard c={c} img={img} locked={locked} run={run} onRegen={(b) => { setBrief(b); setDirty(false); }} />
 
       {/* 1–2. Briefing */}
       <div className="card stack">
@@ -249,10 +249,11 @@ function ProductCard({ c, img, locked, run, onRegen }: { c: Creative; img: strin
   const save = () => run('Salvando produto…', async () => {
     if (f.product_url && !/^https:\/\//i.test(f.product_url)) throw new Error('O link deve começar com https://');
     const patch = { product_name: f.product_name.trim(), product_url: f.product_url.trim() || null, notes: f.notes.trim() || null, format: f.format, goal: f.goal, duration_s: f.duration_s };
-    await updateCreative(c.id, patch as any);
-    onRegen(templateBrief({ ...c, ...patch }, true));
+    const b = templateBrief({ ...c, ...patch }, true);
+    await updateCreative(c.id, { ...patch, brief: b, brief_source: 'template' } as any);
+    onRegen(b);
     setEdit(false);
-  }, 'Produto atualizado. Um novo briefing foi gerado: revise e salve.');
+  }, 'Produto atualizado e novo briefing gerado. Revise os textos abaixo.');
   const photo = (file: File) => run('Enviando foto…', async () => {
     if (!/^image\/(png|jpeg|webp)$/.test(file.type)) throw new Error('Envie JPG, PNG ou WebP.');
     const { path } = await uploadCreativeFile(session.user.id, c.id, file, 'foto');
