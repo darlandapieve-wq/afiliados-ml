@@ -7,6 +7,8 @@ import { CopyButton, Field, Msg } from '../components/ui';
 import { TTS_FORMATS, TTS_PIPELINE, TTS_STATUS, briefIssues, fmtTime, anchorDaysLeft, type TtsBrief, type TtsFormat, type TtsGoal } from '../../supabase/functions/_shared/tts.ts';
 import { PIPPIT_URL, VIDEO_MAX_BYTES, imageOf, templateBrief, uploadCreativeFile, updateCreative, type Creative } from '../lib/tts';
 import { TtsBadge, AnchorCountdown } from './TikTokShop';
+import { loadImage } from '../lib/art';
+import { renderBriefVideo, briefDuration } from '../lib/ttsVideo';
 
 type M = { t: 'ok' | 'err' | 'warn' | 'info'; m: string } | null;
 
@@ -73,6 +75,25 @@ export default function TikTokShopDetail() {
     const { path, url } = await uploadCreativeFile(session.user.id, c.id, file, 'video');
     await updateCreative(c.id, { video_path: path, video_url: url, ...(['draft', 'brief_ready'].includes(c.status) ? { status: 'video_ready' } : {}) } as any);
   }, 'Vídeo enviado.');
+
+  const [rendering, setRendering] = useState<number | null>(null);
+  const generateVideo = async () => {
+    if (!brief) return;
+    if (dirty) { setMsg({ t: 'warn', m: 'Salve as alterações do briefing antes de gerar o vídeo.' }); return; }
+    setMsg(null); setRendering(0);
+    try {
+      const image = img ? await loadImage(img) : null;
+      if (img && !image) throw new Error('Não foi possível carregar a foto do produto. Envie a foto novamente.');
+      const { blob, ext, seconds } = await renderBriefVideo(brief, image, (p) => setRendering(p));
+      if (blob.size < 50_000) throw new Error('O vídeo saiu vazio. Mantenha esta aba visível durante a geração e tente de novo.');
+      setRendering(1);
+      const file = new File([blob], `video-app.${ext}`, { type: blob.type });
+      const { path, url } = await uploadCreativeFile(session.user.id, c.id, file, 'video');
+      await updateCreative(c.id, { video_path: path, video_url: url, ...(['draft', 'brief_ready'].includes(c.status) ? { status: 'video_ready' } : {}) } as any);
+      await load();
+      setMsg({ t: 'ok', m: `Vídeo de ${Math.round(seconds)} s gerado (${ext.toUpperCase()}, ${(blob.size / 1e6).toFixed(1)} MB). Ele não tem som: no TikTok, adicione uma música ou use "texto para fala" com a narração do roteiro.` });
+    } catch (e) { setMsg({ t: 'err', m: errMsg(e) }); } finally { setRendering(null); }
+  };
 
   const publishApi = (confirm_resend = false) => run('Enviando ao TikTok…', async () => {
     const r = await api<any>('tts', { action: 'publish', id: c.id, account_id: ttAcc?.id, confirm_resend });
@@ -184,9 +205,12 @@ export default function TikTokShopDetail() {
       {/* 3. Vídeo */}
       <div className="card stack">
         <h2>Vídeo final</h2>
-        {c.video_url ? <video src={c.video_url} controls style={{ maxWidth: 280, borderRadius: 10 }} /> : <div className="muted small">Envie o MP4 exportado do Pippit para guardar aqui e para publicar pela API. Se for agendar direto no Pippit, o envio é opcional.</div>}
+        {c.video_url ? <video src={c.video_url} controls style={{ maxWidth: 280, borderRadius: 10 }} /> : <div className="muted small">Gere aqui um vídeo vertical com a foto do produto e os textos do roteiro (grátis, sem som), ou envie o MP4 exportado do Pippit.</div>}
+        {rendering !== null && <div className="alert info small">Gravando o vídeo em tempo real ({Math.round(rendering * 100)}%). Mantenha esta aba aberta e visível até terminar.</div>}
+        {c.video_url && <div className="row"><a className="btn" href={c.video_url} download target="_blank" rel="noreferrer">Baixar vídeo</a></div>}
         {!locked && (
           <div className="row">
+            {brief && <button className="primary" disabled={rendering !== null || !!busy} onClick={generateVideo}>{rendering !== null ? `Gerando… ${Math.round(rendering * 100)}%` : `🎬 Gerar vídeo no app (${briefDuration(brief)} s, grátis)`}</button>}
             <label className="btn">{c.video_url ? 'Trocar vídeo' : 'Enviar MP4'}<input type="file" accept="video/mp4,video/webm" hidden onChange={(e) => e.target.files?.[0] && uploadVideo(e.target.files[0])} /></label>
             {['draft', 'brief_ready'].includes(c.status) && <button onClick={() => setStatus('video_ready', {}, 'Marcado como vídeo pronto.')}>Já gerei no Pippit (sem enviar)</button>}
           </div>
